@@ -166,9 +166,11 @@
             const GROUND_HEIGHT = 60;
 
             // ─────────────────────────────────────
-            // VARIABLES DE ESTADO
+            // VARIABLES DE ESTADO (CORREGIDO)
             // ─────────────────────────────────────
-            let birdY, birdVelocity, birdX;
+            let birdY = canvas.height / 2 - 30;   // ¡INICIALIZADO!
+            let birdVelocity = 0;                 // ¡INICIALIZADO!
+            let birdX = 100;                      // ¡INICIALIZADO!
             let pipes = [];
             let score = 0;
             let highScore = 0;
@@ -220,15 +222,12 @@
                 const birdCX = birdX + BIRD_SIZE / 2;
                 const birdCY = birdY + BIRD_SIZE / 2;
 
-                // Tubería superior
                 const topRect = { x: pipe.x, y: 0, w: PIPE_WIDTH, h: pipe.topHeight };
-                // Tubería inferior
                 const bottomRect = { x: pipe.x, y: pipe.bottomY, w: PIPE_WIDTH, h: canvas.height - GROUND_HEIGHT - pipe
                         .bottomY };
 
                 const rects = [topRect, bottomRect];
                 for (const rect of rects) {
-                    // Encontrar el punto más cercano del rectángulo al centro del círculo
                     const closestX = Math.max(rect.x, Math.min(birdCX, rect.x + rect.w));
                     const closestY = Math.max(rect.y, Math.min(birdCY, rect.y + rect.h));
                     const distX = birdCX - closestX;
@@ -258,48 +257,37 @@
                 if (!gameRunning) return;
 
                 frameCount++;
-
-                // Física del pájaro
                 birdVelocity += GRAVITY;
                 birdY += birdVelocity;
-
-                // Limitar velocidad máxima de caída
                 if (birdVelocity > 12) birdVelocity = 12;
 
-                // Colisión con el suelo
                 if (checkGroundCollision()) {
                     birdY = canvas.height - GROUND_HEIGHT - BIRD_SIZE;
                     endGame();
                     return;
                 }
 
-                // Colisión con el techo
                 if (checkCeilingCollision()) {
                     birdY = 0;
                     birdVelocity = 1;
                 }
 
-                // Spawnear tuberías
                 if (frameCount % PIPE_SPAWN_INTERVAL === 0 && frameCount > 40) {
                     spawnPipe();
                 }
 
-                // Mover y verificar tuberías
                 for (let i = pipes.length - 1; i >= 0; i--) {
                     const pipe = pipes[i];
                     pipe.x -= PIPE_SPEED;
 
-                    // Verificar colisión
                     if (checkCollision(pipe)) {
                         endGame();
                         return;
                     }
 
-                    // Marcar puntuación cuando el pájaro pasa la tubería
                     if (!pipe.scored && pipe.x + PIPE_WIDTH < birdX) {
                         pipe.scored = true;
                         score++;
-                        // Efecto visual de puntuación
                         spawnScorePopup();
                         if (score > highScore) {
                             highScore = score;
@@ -309,13 +297,11 @@
                         }
                     }
 
-                    // Eliminar tuberías que salen de pantalla
                     if (pipe.x + PIPE_WIDTH < -20) {
                         pipes.splice(i, 1);
                     }
                 }
 
-                // Reducir shake
                 if (shakeAmount > 0) {
                     shakeAmount *= 0.85;
                     if (shakeAmount < 0.1) shakeAmount = 0;
@@ -333,7 +319,6 @@
                 if (gameRunning) {
                     birdVelocity = JUMP_FORCE;
                 } else if (!gameStarted) {
-                    // Reiniciar después de game over
                     resetGame();
                 }
             }
@@ -357,7 +342,6 @@
             // RENDERIZADO
             // ─────────────────────────────────────
             function drawSky() {
-                // Cielo con gradiente
                 const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height - GROUND_HEIGHT);
                 skyGrad.addColorStop(0, '#87CEEB');
                 skyGrad.addColorStop(0.55, '#b8e4f0');
@@ -365,8 +349,6 @@
                 skyGrad.addColorStop(1, '#d4eef7');
                 ctx.fillStyle = skyGrad;
                 ctx.fillRect(0, 0, canvas.width, canvas.height - GROUND_HEIGHT);
-
-                // Nubes decorativas
                 drawCloud(50, 80, 0.7);
                 drawCloud(280, 130, 0.5);
                 drawCloud(180, 45, 0.9);
@@ -390,7 +372,6 @@
 
             function drawGround() {
                 const groundY = canvas.height - GROUND_HEIGHT;
-                // Tierra principal
                 const groundGrad = ctx.createLinearGradient(0, groundY, 0, canvas.height);
                 groundGrad.addColorStop(0, '#a0d468');
                 groundGrad.addColorStop(0.06, '#8cc63f');
@@ -398,14 +379,10 @@
                 groundGrad.addColorStop(1, '#4a6e1a');
                 ctx.fillStyle = groundGrad;
                 ctx.fillRect(0, groundY, canvas.width, GROUND_HEIGHT);
-
-                // Borde superior del suelo (césped)
                 ctx.fillStyle = '#b8e986';
                 ctx.fillRect(0, groundY, canvas.width, 4);
                 ctx.fillStyle = '#c5f090';
                 ctx.fillRect(0, groundY, canvas.width, 2);
-
-                // Textura de pasto
                 ctx.fillStyle = '#7db634';
                 for (let i = 0; i < canvas.width; i += 18) {
                     ctx.beginPath();
@@ -420,7 +397,6 @@
 
             function drawPipeBody(x, y, width, height) {
                 if (height <= 0) return;
-                // Gradiente principal del tubo
                 const pipeGrad = ctx.createLinearGradient(x, 0, x + width, 0);
                 pipeGrad.addColorStop(0, '#4a8c2a');
                 pipeGrad.addColorStop(0.2, '#6db83a');
@@ -430,14 +406,10 @@
                 pipeGrad.addColorStop(1, '#3d6e1e');
                 ctx.fillStyle = pipeGrad;
                 ctx.fillRect(x, y, width, height);
-
-                // Borde izquierdo (brillo)
                 ctx.fillStyle = 'rgba(255,255,255,0.15)';
                 ctx.fillRect(x + 2, y, 6, height);
-                // Borde derecho (sombra)
                 ctx.fillStyle = 'rgba(0,0,0,0.2)';
                 ctx.fillRect(x + width - 8, y, 6, height);
-                // Línea central sutil
                 ctx.fillStyle = 'rgba(255,255,255,0.06)';
                 ctx.fillRect(x + width / 2 - 1, y, 2, height);
             }
@@ -450,18 +422,15 @@
                 capGrad.addColorStop(0.7, '#7cc445');
                 capGrad.addColorStop(1, '#3d6e1e');
                 ctx.fillStyle = capGrad;
-
                 const capWidth = width + 12;
                 const capX = x - 6;
                 if (isTop) {
-                    // Cap superior (borde inferior del cap)
                     ctx.fillRect(capX, y + capHeight - 18, capWidth, 18);
                     ctx.fillStyle = 'rgba(255,255,255,0.2)';
                     ctx.fillRect(capX + 2, y + capHeight - 16, 6, 10);
                     ctx.fillStyle = 'rgba(0,0,0,0.18)';
                     ctx.fillRect(capX + capWidth - 8, y + capHeight - 16, 6, 10);
                 } else {
-                    // Cap inferior (borde superior del cap)
                     ctx.fillRect(capX, y, capWidth, 18);
                     ctx.fillStyle = 'rgba(255,255,255,0.2)';
                     ctx.fillRect(capX + 2, y + 2, 6, 10);
@@ -473,14 +442,11 @@
             function drawPipes() {
                 for (const pipe of pipes) {
                     const capHeight = 22;
-                    // Tubería superior
                     const topBodyHeight = pipe.topHeight - capHeight;
                     if (topBodyHeight > 0) {
                         drawPipeBody(pipe.x, 0, PIPE_WIDTH, topBodyHeight);
                     }
                     drawPipeCap(pipe.x, pipe.topHeight - capHeight, PIPE_WIDTH, capHeight, true);
-
-                    // Tubería inferior
                     const bottomBodyStart = pipe.bottomY + capHeight;
                     const bottomBodyHeight = canvas.height - GROUND_HEIGHT - bottomBodyStart;
                     if (bottomBodyHeight > 0) {
@@ -496,7 +462,7 @@
                 const cy = birdY + BIRD_SIZE / 2;
                 const radius = BIRD_SIZE / 2;
 
-                // Sombra del pájaro
+                // Sombra
                 ctx.fillStyle = 'rgba(0,0,0,0.2)';
                 ctx.beginPath();
                 ctx.arc(cx + 2, cy + 3, radius, 0, Math.PI * 2);
@@ -511,19 +477,17 @@
                 ctx.beginPath();
                 ctx.arc(cx, cy, radius, 0, Math.PI * 2);
                 ctx.fill();
-
-                // Borde del cuerpo
                 ctx.strokeStyle = '#c47000';
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
-                // Vientre claro
+                // Vientre
                 ctx.fillStyle = '#fff3cd';
                 ctx.beginPath();
                 ctx.ellipse(cx + 2, cy + 4, radius * 0.55, radius * 0.5, 0.2, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Ojo (blanco)
+                // Ojo blanco
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
                 ctx.arc(cx + 8, cy - 4, radius * 0.42, 0, Math.PI * 2);
@@ -538,7 +502,7 @@
                 ctx.arc(cx + 10, cy - 4, radius * 0.2, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Brillo del ojo
+                // Brillo
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
                 ctx.arc(cx + 11.5, cy - 5.5, radius * 0.09, 0, Math.PI * 2);
@@ -555,7 +519,6 @@
                 ctx.strokeStyle = '#c4401a';
                 ctx.lineWidth = 1;
                 ctx.stroke();
-                // Línea del pico
                 ctx.strokeStyle = '#c4401a';
                 ctx.lineWidth = 0.8;
                 ctx.beginPath();
@@ -573,7 +536,7 @@
                 ctx.lineWidth = 1.4;
                 ctx.stroke();
 
-                // Plumas de la cola
+                // Cola
                 ctx.fillStyle = '#d48900';
                 ctx.beginPath();
                 ctx.moveTo(cx - radius + 2, cy);
@@ -591,23 +554,19 @@
             }
 
             function drawGameOverOverlay() {
-                // Overlay oscuro
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-                // Panel de Game Over
                 const panelW = 260;
                 const panelH = 200;
                 const panelX = canvas.width / 2 - panelW / 2;
                 const panelY = canvas.height / 2 - panelH / 2 - 30;
 
-                // Sombra del panel
                 ctx.fillStyle = 'rgba(0,0,0,0.45)';
                 ctx.beginPath();
                 ctx.roundRect(panelX + 4, panelY + 4, panelW, panelH, 16);
                 ctx.fill();
 
-                // Panel principal
                 const panelGrad = ctx.createLinearGradient(panelX, panelY, panelX, panelY + panelH);
                 panelGrad.addColorStop(0, '#fffef5');
                 panelGrad.addColorStop(0.5, '#fdf6e3');
@@ -620,23 +579,19 @@
                 ctx.lineWidth = 3;
                 ctx.stroke();
 
-                // Texto "Game Over"
                 ctx.fillStyle = '#5c3d1a';
                 ctx.font = '900 30px "Segoe UI", system-ui, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText('¡GAME OVER!', canvas.width / 2, panelY + 50);
 
-                // Puntuación
                 ctx.fillStyle = '#7a5c30';
                 ctx.font = '700 18px "Segoe UI", system-ui, sans-serif';
                 ctx.fillText(`Puntuación: ${score}`, canvas.width / 2, panelY + 85);
 
-                // High Score
                 ctx.fillStyle = '#b8860b';
                 ctx.font = '700 16px "Segoe UI", system-ui, sans-serif';
                 ctx.fillText(`🏆 Récord: ${highScore}`, canvas.width / 2, panelY + 112);
 
-                // Instrucción de reinicio
                 ctx.fillStyle = '#8b7355';
                 ctx.font = '600 15px "Segoe UI", system-ui, sans-serif';
                 const pulse = Math.sin(Date.now() / 600) * 0.3 + 0.7;
@@ -653,7 +608,6 @@
                 ctx.textAlign = 'center';
                 ctx.fillText('¡Presiona para empezar!', canvas.width / 2, canvas.height / 2 + 30);
 
-                // Flecha flotante
                 const arrowY = canvas.height / 2 - 30 + Math.sin(Date.now() / 500) * 10;
                 ctx.fillStyle = `rgba(255,255,255,${pulse})`;
                 ctx.font = '40px sans-serif';
@@ -661,23 +615,18 @@
             }
 
             function drawScoreHUD() {
-                // Fondo de la puntuación
                 const scoreText = score.toString();
-                const textWidth = ctx.measureText(scoreText).width;
                 const hudX = canvas.width / 2;
                 const hudY = 48;
 
-                // Sombra
                 ctx.fillStyle = 'rgba(0,0,0,0.3)';
                 ctx.font = '900 40px "Segoe UI", system-ui, sans-serif';
                 ctx.textAlign = 'center';
                 ctx.fillText(scoreText, hudX + 2, hudY + 2);
 
-                // Texto principal
                 ctx.fillStyle = '#ffffff';
                 ctx.fillText(scoreText, hudX, hudY);
 
-                // Borde sutil
                 ctx.strokeStyle = 'rgba(0,0,0,0.25)';
                 ctx.lineWidth = 1.5;
                 ctx.strokeText(scoreText, hudX, hudY);
@@ -686,7 +635,6 @@
             function render() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                // Aplicar shake si es necesario
                 ctx.save();
                 if (shakeAmount > 0.1) {
                     const shakeX = (Math.random() - 0.5) * shakeAmount * 2;
@@ -701,13 +649,11 @@
                 if (gameRunning || (!gameRunning && gameStarted === false && pipes.length === 0)) {
                     drawBird();
                 } else if (!gameRunning && gameStarted === false && pipes.length > 0) {
-                    // Mostrar el pájaro donde cayó
                     drawBird();
                 }
 
                 ctx.restore();
 
-                // Elementos HUD (sin shake)
                 if (gameRunning) {
                     drawScoreHUD();
                 }
@@ -734,10 +680,8 @@
             canvas.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (!gameRunning && !gameStarted && pipes.length > 0) {
-                    // Game over -> reiniciar
                     resetGame();
                 } else if (!gameRunning && !gameStarted && pipes.length === 0) {
-                    // Primer inicio
                     resetGame();
                 } else if (gameRunning) {
                     jump();
@@ -757,7 +701,6 @@
                 }
             });
 
-            // Soporte táctil mejorado
             canvas.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 if (!gameRunning && !gameStarted && pipes.length > 0) {
@@ -772,14 +715,10 @@
             // ─────────────────────────────────────
             // INICIAR
             // ─────────────────────────────────────
-            // Dibujar estado inicial
             render();
-            // Iniciar bucle
             gameLoop();
 
             console.log('🐦 Flappy Bird listo!');
-            console.log('   Presiona ESPACIO o haz CLICK para empezar.');
-            console.log('   Evita las tuberías verdes y consigue la mayor puntuación.');
         })();
     </script>
 </body>
